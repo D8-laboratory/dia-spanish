@@ -51,7 +51,11 @@ volume = modal.Volume.from_name("dia-spanish-vol", create_if_missing=True)
 
 download_image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg", "git")
+    .apt_install("ffmpeg", "git", "curl", "unzip")
+    .run_commands(
+        # Install deno (yt-dlp needs JS runtime for YouTube)
+        "curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh",
+    )
     .pip_install(
         "yt-dlp>=2024.12.0",
         "tqdm",
@@ -177,7 +181,7 @@ def _download_audio(
         "-x",  # extract audio
         "--audio-format", "wav",
         "--audio-quality", "0",
-        "--postprocessor-args", "-ar 16000 -ac 1",
+        "--postprocessor-args", "ffmpeg:-ar 16000 -ac 1",
         "-o", str(output_dir / f"{episode_id}.%(ext)s"),
         "--no-write-comments",
         "--no-write-description",
@@ -186,10 +190,12 @@ def _download_audio(
         "--sub-lang", "es",
         "--sub-format", "vtt",
         "--restrict-filenames",
+        "--retries", "3",
+        "--fragment-retries", "3",
         video_url,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
 
     if result.returncode != 0:
         print(f"  ⚠ Download failed: {result.stderr[:200]}")
@@ -519,11 +525,11 @@ def main(
     # Phase 2: Download audio
     print(f"\n⬇️  Phase 2: Downloading {len(episodes)} episodes...")
     results = []
-    for chunk_start in range(0, len(episodes), 5):
-        chunk = episodes[chunk_start:chunk_start + 5]
+    for chunk_start in range(0, len(episodes), 10):
+        chunk = episodes[chunk_start:chunk_start + 10]
         chunk_results = download_episode.map(chunk)
         results.extend(chunk_results)
-        print(f"  Progress: {min(chunk_start + 5, len(episodes))}/{len(episodes)}")
+        print(f"  Progress: {min(chunk_start + 10, len(episodes))}/{len(episodes)}")
 
     successful = [r for r in results if r is not None]
     failed = len(episodes) - len(successful)
