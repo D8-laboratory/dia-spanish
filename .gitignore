@@ -1,0 +1,50 @@
+# Dia original ignores
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dia Spanish additions
+# Audio files (too large for git)
+data/raw/**/*.wav
+data/raw/**/*.mp3
+data/raw/**/*.flac
+data/raw/**/*.ogg
+data/processed/**/*.wav
+data/processed/**/*.mp3
+data/processed/**/*.flac
+data/processed/**/*.pt
+data/processed/**/*.safetensors
+
+# Keep text data
+!data/raw/synthetic/*.jsonl
+!data/processed/*.jsonl
+!data/processed/*.csv
+
+# Environment
+.env
+.env.local
+
+# Model checkpoints
+output/
+checkpoints/
+runs/

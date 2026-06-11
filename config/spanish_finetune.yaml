@@ -1,0 +1,62 @@
+# Spanish Dia Fine-tuning Configuration
+
+model:
+  base_model: "nari-labs/Dia-1.6B"
+  # Dia uses byte-level encoding — no tokenizer changes needed for Spanish
+
+training:
+  adapter_type: "lora"  # lora | dora | full
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "encoder.layers.*.self_attn"
+    - "encoder.layers.*.mlp"
+    - "decoder.layers.*.self_attn"
+    - "decoder.layers.*.cross_attn"
+    - "decoder.layers.*.mlp"
+
+  batch_size: 4
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  warmup_steps: 500
+  max_steps: 10000
+  gradient_accumulation_steps: 4
+  max_duration_sec: 30
+
+  optimizer: "adamw"
+  scheduler: "cosine"
+
+  fp16: false
+  bf16: true
+
+  save_steps: 1000
+  eval_steps: 500
+  save_total_limit: 3
+
+data:
+  train_path: "data/processed/spanish_dialogues_train.jsonl"
+  eval_path: "data/processed/spanish_dialogues_eval.jsonl"
+  audio_dir: "data/processed/audio/"
+  speed_perturbation: [0.95, 1.0, 1.05]
+  volume_perturbation: true
+
+evaluation:
+  asr_model: "openai/whisper-large-v3"
+  metrics:
+    - "wer"
+    - "cer"
+    - "speaker_consistency"
+    - "naturalness_mos"
+
+compute:
+  platform: "modal"
+  gpu: "A100-80GB"
+  num_gpus: 1
+  modal_volume: "dia-spanish-vol"
+  timeout: 3600
+
+adaption_labs:
+  dataset_name: "dia-spanish-dialogues"
+  auto_scientist: true
+  credits_budget: 1000
