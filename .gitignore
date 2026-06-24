@@ -48,3 +48,21 @@ data/processed/**/*.safetensors
 output/
 checkpoints/
 runs/
+
+# Dia-Spanish: heavy local artifacts (live on the Modal volume, not in git)
+# full-episode source WAVs (~840 MB)
+results/audio/
+# raw WhisperX JSON (~265 MB)
+results/transcripts/
+# generated audio samples
+results/es_samples/
+# local backup of the original inference-only code
+dia_backup_inference/
+*.wav
+*.mp3
+*.flac
+*.ogg
+# but keep the lightweight, reproducible data artifacts:
+!results/chunk_manifest.jsonl
+!results/chunk_manifest_smoke.jsonl
+!results/dia_format/
