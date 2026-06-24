@@ -55,8 +55,3 @@ compute:
   num_gpus: 1
   modal_volume: "dia-spanish-vol"
   timeout: 3600
-
-adaption_labs:
-  dataset_name: "dia-spanish-dialogues"
-  auto_scientist: true
-  credits_budget: 1000

@@ -2,7 +2,7 @@
 
 > Spanish adaptation of [NARI Labs Dia](https://github.com/nari-labs/dia) — a 1.6B text-to-dialogue model that generates highly realistic multi-speaker conversations from transcripts.
 
-**D8 Labs** · AutoScientist Challenge (Adaption Labs) · Language Category
+**D8 Labs** · Spanish Text-to-Dialogue
 
 ---
 
@@ -53,44 +53,20 @@ Key data sources:
 - [TEDx Spanish Corpus](https://www.openslr.org/107/)
 - [MagicHub SpCSC](https://www.magichub.com/datasets/) (used in moshi-spanish-finetuned)
 
-### Phase 2: Data Adaptation with Adaption Labs (Weeks 2-3)
+### Phase 2: Data Preparation (Weeks 2-3)
 
-Use the **Adaption Labs platform** ($1,000 credits) to:
-- Ingest raw Spanish dialogue transcripts
-- Adapt/optimize the dataset quality (deduplication, prompt rephrasing, quality scoring)
-- Add reasoning traces for complex conversational patterns
-- Export training-ready datasets
-
-```python
-from adaption import Adaption
-
-client = Adaption(api_key=os.environ["ADAPTION_API_KEY"])
-
-# Upload Spanish dialogue dataset
-result = client.datasets.upload_file("data/spanish_dialogues_train.jsonl")
-
-# Adapt with quality recipes
-run = client.datasets.run(
-    result.dataset_id,
-    column_mapping={
-        "prompt": "transcript",
-        "completion": "audio_path",
-    },
-    recipe_specification={
-        "recipes": {
-            "deduplication": True,
-            "prompt_rephrase": True,
-            "reasoning_traces": True,
-        },
-    },
-)
-```
+Turn raw podcast audio into speaker-tagged training chunks:
+- Transcribe + diarize with **WhisperX** (word-level timestamps + speakers)
+- Group words into 3–17 s chunks with `[S1]`/`[S2]` tags → `chunk_manifest.jsonl`
+- Cut + resample audio (16k → 44.1 kHz mono) on Modal
+- Package into a HuggingFace `datasets.Dataset` with an `Audio` feature
 
 ### Phase 3: Fine-Tuning (Weeks 3-4)
 
 - Fine-tune `nari-labs/Dia-1.6B` on the Spanish dataset
-- Use LoRA/DoRA adapters (preserve English capability)
-- Train on Modal (A100 80GB) or Adaption Labs compute
+- Full fine-tune in bf16 with an 8-bit AdamW optimizer
+- Channel-weighted cross-entropy over the 9 DAC codebooks
+- Train on Modal (A100 80GB)
 - Spanish-specific nonverbal tags: `(risas)`, `(suspiros)`, `(tos)`, `(gemidos)`
 
 ### Phase 4: Evaluation & Release
@@ -98,7 +74,7 @@ run = client.datasets.run(
 - ASR-based evaluation: generate audio → transcribe → compare with input transcript
 - Speaker consistency metrics
 - Naturalness MOS (Mean Opinion Score) with native Spanish speakers
-- Release weights to HuggingFace + Kaggle (AutoScientist Challenge requirement)
+- Release weights to HuggingFace
 
 ---
 
@@ -124,12 +100,9 @@ dia-spanish/
 │   └── evaluate_es.py                 # Spanish evaluation pipeline
 ├── config/
 │   └── spanish_finetune.yaml           # Training config
-├── adaption/
-│   ├── ingest.py                       # Adaption Labs data pipeline
-│   └── adapt_dataset.py                # Run adaptation recipes
 ├── docs/
 │   ├── DATA_SOURCES.md                 # Spanish audio data sources
-│   └── ADAPTION_INTEGRATION.md         # Adaption Labs usage guide
+│   └── Dia-Spanish-Report.pdf          # Architecture, pipeline & data report
 ├── app.py                  # Gradio UI (from upstream)
 ├── cli.py                  # CLI interface (from upstream)
 ├── example/                # Example scripts (from upstream)
@@ -162,31 +135,15 @@ python scripts/generate_spanish_dialogues.py --num-samples 100 --output data/raw
 python scripts/prepare_training_data.py --input data/raw/synthetic/spanish_dialogues.jsonl --output data/processed/spanish_dialogues_train.jsonl
 ```
 
-### Run Adaption Labs pipeline
-
-```bash
-pip install adaption
-python adaption/ingest.py --dataset data/processed/spanish_dialogues_train.jsonl --adapt
-```
-
 ### Fine-tune on Modal
 
 ```bash
-# TODO: modal run finetune_es.py
+# Smoke test (3,000 samples, 1 epoch, ~1 hour on L40S)
+modal run train_dia_es.py --max-samples 3000 --epochs 1
+
+# Full run (43,219 samples, 2 epochs, ~24h on A100-80GB)
+modal run train_dia_es.py --max-samples 0 --epochs 2 --gpu a100-80gb
 ```
-
----
-
-## 🔬 AutoScientist Challenge
-
-This project is submitted to the **[AutoScientist Challenge](https://adaptionlabs.ai/blog/autoscientist-challenge)** by Adaption Labs in the **Language** category.
-
-**Deliverables:**
-- [ ] Adapted Spanish dialogue dataset released on HuggingFace + Kaggle
-- [ ] Fine-tuned model weights released on HuggingFace + Kaggle
-- [ ] Measurable improvement over baseline `nari-labs/Dia-1.6B` on Spanish dialogue quality
-- [ ] Demo of AutoScientist in action
-- [ ] Social post on LinkedIn + X tagging @adaption_ai
 
 ---
 
@@ -194,7 +151,6 @@ This project is submitted to the **[AutoScientist Challenge](https://adaptionlab
 
 - [moshi-spanish-finetuned](https://github.com/D8-laboratory/moshi-spanish-finetuned) — Our Spanish PersonaPlex/Moshi fine-tune for Certeza STS
 - [nari-labs/dia](https://github.com/nari-labs/dia) — Original Dia model (upstream)
-- [Adaption Labs](https://adaptionlabs.ai) — Adaptive Data platform + AutoScientist
 
 ---
 
