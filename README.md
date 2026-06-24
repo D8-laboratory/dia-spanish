@@ -149,6 +149,7 @@ modal run train_dia_es.py --max-samples 0 --epochs 2 --gpu a100-80gb
 
 ## 🔗 Related Projects
 
+- [TuananhCR/Dia-Finetuning-Vietnamese](https://github.com/TuananhCR/Dia-Finetuning-Vietnamese) — Vietnamese Dia fine-tune by Tuan Anh (Cos Rigel) that **inspired our training setup** (full fine-tune, bf16 + 8-bit optimizer, DAC channel-weighted loss, 44.1 kHz HF-dataset pipeline). Our `VietnameseDiaDataset` and HF dataset schema follow their `cosrigel/vn_tts_medium_clean` approach.
 - [moshi-spanish-finetuned](https://github.com/D8-laboratory/moshi-spanish-finetuned) — Our Spanish PersonaPlex/Moshi fine-tune for Certeza STS
 - [nari-labs/dia](https://github.com/nari-labs/dia) — Original Dia model (upstream)
 
