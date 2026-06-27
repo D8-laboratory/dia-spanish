@@ -1,0 +1,23 @@
+S1 audio: speaker1sample.ogg (8.1s)
+S1 transcript: muy salas por esas tortillas 10 de 10 compralas de verdad son lo máximo lo máximo lo máximo
+
+S2 audio: speaker2sample.ogg (12.6s)
+S2 transcript: Ah bueno, esperemos que te den un buen deal. Ahí vas a estar más cerca para que te molestes.
+
+Dialogue (8 turns, 1 per chunk):
+[S1] Oye, ¿ya escuchaste que van a abrir un restaurante nuevo en el barrio?
+[S2] Sí, me contaron. Dicen que es de cocina fusión, algo entre mexicano y japonés.
+[S1] ¿En serio? Eso suena rarísimo, pero también me da mucha curiosidad.
+[S2] A mí también. Mi prima fue a uno parecido en Madrid y dice que estaba buenísimo.
+[S1] Pues habrá que ir a probarlo cuando abra. ¿El fin de semana que viene tienes algo?
+[S2] Creo que estoy libre el sábado por la tarde. ¿A qué hora quedamos?
+[S1] Podríamos ir sobre las dos, comemos y luego damos una vuelta por el centro.
+[S2] Me parece perfecto. Yo reservo la mesa para no tener que esperar.
+
+Settings:
+  checkpoint: ckpt_epoch1.pth
+  cfg_scale: 3.0
+  temperature: 1.3
+  top_p: 0.95
+  extra_steps_after_eos: 100 (~1.15s tail)
+  max_tokens: 3072

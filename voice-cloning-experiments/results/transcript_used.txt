@@ -1,0 +1,8 @@
+Audio sample: voice-cloning-experiments/voicespeaker1.ogg
+Whisper (medium) transcript: muy salas por esas tortillas 10 de 10 compralas de verdad son lo máximo lo máximo lo máximo
+
+Full prompt fed to Dia:
+[S1] muy salas por esas tortillas 10 de 10 compralas de verdad son lo máximo lo máximo lo máximo
+[S1] Bueno, la verdad es que esto es una prueba de clonación de voz. [S1] Vamos a ver si el modelo logra copiar mi voz en español. [S1] Si funciona, sería algo bastante impresionante.
+
+Checkpoint: ckpt_epoch1.pth

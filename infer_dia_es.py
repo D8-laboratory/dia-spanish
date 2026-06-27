@@ -56,7 +56,7 @@ image = (
         "pydantic>=2.11.3",
     )
     .pip_install(
-        "protobuf>=4.21,<5.0",
+        "protobuf>=5.26.1",
         "numpy>=1.24.0,<2.0",
     )
     .env({"PYTHONPATH": "/root:$PYTHONPATH"})

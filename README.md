@@ -147,6 +147,32 @@ modal run train_dia_es.py --max-samples 0 --epochs 2 --gpu a100-80gb
 
 ---
 
+## ⚠️ Voice cloning experiments — still a failure
+
+`transcribe_and_clone.py` explores using an audio prompt to clone a speaker's
+voice on the fine-tuned checkpoint. **It does not work yet.** Findings so far:
+
+- A single clean 5–10 s prompt clones speaker 1 reasonably at the start, but the
+  voice **drifts** as the clip grows longer.
+- Splicing two prompts (S1 + S2) to clone both speakers is too out-of-distribution
+  and **degenerates into pure noise** whenever generation runs long.
+- Chunked / per-round generation, EOS-tail tuning (`extra_steps_after_eos`),
+  min/max length guards (`min_steps_before_eos`, `force_eos_at`) — all reduce the
+  *symptoms* (runaway rambling, premature cutoff) but **do not fix the core drift**.
+
+Root cause: the first fine-tune was trained **without any audio-prompt
+conditioning**, so prompt-following is only whatever base Dia had — never
+reinforced. Proper voice cloning will require a **retrain with speaker-prefix /
+audio-prompt conditioning** baked into the data pipeline. Until then, treat the
+voice-cloning path as experimental and unreliable.
+
+```bash
+# Single-S1-prompt round generation (best current behavior, still drifts)
+modal run transcribe_and_clone.py::chunked
+```
+
+---
+
 ## 🔗 Related Projects
 
 - [TuananhCR/Dia-Finetuning-Vietnamese](https://github.com/TuananhCR/Dia-Finetuning-Vietnamese) — Vietnamese Dia fine-tune by Tuan Anh (Cos Rigel) that **inspired our training setup** (full fine-tune, bf16 + 8-bit optimizer, DAC channel-weighted loss, 44.1 kHz HF-dataset pipeline). Our `VietnameseDiaDataset` and HF dataset schema follow their `cosrigel/vn_tts_medium_clean` approach.

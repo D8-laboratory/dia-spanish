@@ -1,0 +1,4 @@
+file '/vol/output/voice_cloning/chunked/chunk_00.wav'
+file '/vol/output/voice_cloning/chunked/chunk_01.wav'
+file '/vol/output/voice_cloning/chunked/chunk_02.wav'
+file '/vol/output/voice_cloning/chunked/chunk_03.wav'

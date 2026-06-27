@@ -457,6 +457,9 @@ class Dia:
         use_torch_compile: bool = False,
         cfg_filter_top_k: int = 35,
         audio_prompt_path: str | None = None,
+        extra_steps_after_eos: int = 18,
+        min_steps_before_eos: int = 0,
+        force_eos_at: int | None = None,
     ) -> np.ndarray:
         """
         Generates audio from a text prompt (and optional audio prompt) using the Nari model.
@@ -472,6 +475,9 @@ class Dia:
         max_tokens = self.config.data.audio_length if max_tokens is None else max_tokens
         delay_tensor = torch.tensor(delay_pattern, dtype=torch.long, device=self.device)
         max_delay_pattern = max(delay_pattern)
+        # The EOS closeout needs at least max_delay_pattern steps to flush the delayed
+        # channels; anything below that truncates the tail. Steps beyond it free-run.
+        extra_steps_after_eos = max(extra_steps_after_eos, max_delay_pattern)
         self.model.eval()
 
         (
@@ -567,7 +573,6 @@ class Dia:
         # 4. Autoregressive Generation Loop
         eos_detected_channel_0 = False
         eos_countdown = -1
-        extra_steps_after_eos = 30
         # Make generated_BxTxC a fixed size tensor
         # Length is either 1 + max tokens or 1 + prompt len + max tokens
         generated_BxTxC = torch.cat(
@@ -601,6 +606,7 @@ class Dia:
         )  # [B, 1, 1, S]
 
         for step in range(current_step, current_step + max_tokens):
+            gen_idx = step - current_step
             tgt_ids_Bx1xC = generated_BxTxC[:, step, :].unsqueeze(1)
             tgt_pos_Bx1 = torch.full(
                 (2, 1),
@@ -632,6 +638,11 @@ class Dia:
             logits_CxV = cfg_logits_CxV.reshape((-1, V))  # C, V
             logits_CxV[:, 1025:] = -torch.inf
 
+            # Forbid channel-0 EOS until a minimum number of steps so short turns
+            # aren't truncated early (premature-EOS guard, replaces inflating the tail).
+            if gen_idx < min_steps_before_eos:
+                logits_CxV[0, audio_eos_value] = -torch.inf
+
             # Sample next token
             pred_C = _sample_next_token(
                 logits_CxV.float(),
@@ -641,17 +652,19 @@ class Dia:
                 cfg_filter_top_k=cfg_filter_top_k,
             )
 
-            generation_step_index = step - current_step
             if audio_prompt_path is None:
                 pred_C = torch.where(
-                    generation_step_index >= delay_tensor,
+                    gen_idx >= delay_tensor,
                     pred_C,
                     audio_bos_value,
                 )
 
             generated_BxTxC[:, step + 1, :] = pred_C.unsqueeze(0).expand(2, -1)
 
-            if not eos_detected_channel_0 and pred_C[0] == audio_eos_value:
+            # Trigger the EOS closeout on a real EOS, or gracefully at the generation
+            # ceiling so a non-stopping chunk is bounded instead of overflowing the KV cache.
+            hit_ceiling = force_eos_at is not None and gen_idx >= force_eos_at
+            if not eos_detected_channel_0 and (pred_C[0] == audio_eos_value or hit_ceiling):
                 eos_detected_channel_0 = True
                 eos_countdown = extra_steps_after_eos
 
@@ -665,8 +678,6 @@ class Dia:
                 eos_countdown -= 1
                 if eos_countdown == 0:
                     break
-
-            generation_step_index = step - current_step + 1
 
         output_codes = generated_BxTxC[:, prompt_len_inc_bos : step + 1, :]
 
